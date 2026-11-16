@@ -1,27 +1,55 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="kpis">
-  <div class="kpi"><b>差异项</b><strong>2</strong><small>条</small></div>
-  <div class="kpi"><b>通过</b><strong>0</strong><small>条</small></div>
-  <div class="kpi"><b>隔离</b><strong>3</strong><small>条</small></div>
-  <div class="kpi"><b>规则版</b><strong>1.6</strong><small>v</small></div>
+  <div class="kpi"><b>差异批次</b><strong>{{ batches | length }}</strong><small>个</small></div>
+  <div class="kpi"><b>最新版本</b><strong>{{ current_version }}</strong><small>v</small></div>
+  <div class="kpi"><b>本页显示</b><strong>{{ rows | length }}</strong><small>条</small></div>
+  <div class="kpi"><b>规则版</b><strong>{{ version }}</strong><small>v</small></div>
 </section>
 <div class="grid grid--quad">
   <section class="panel">
-    <div class="panel__head"><h2>差异批次</h2><span class="state state--ok">通过</span></div>
+    <div class="panel__head">
+      <h2>批次台账</h2>
+      <span class="panel__meta">批次绑定建批时的映射版本</span>
+    </div>
     <div class="panel__body panel__body--scroll">
-      <table class="ledger"><thead><tr><th>序号</th><th>业务键</th><th>状态</th><th class="num">值</th></tr></thead>
-      <tbody>{% for row in rows %}<tr><td class="num">{{ loop.index }}</td><td>{{ row.key }}</td><td>{{ row.status }}</td><td class="num">{{ row.value }}</td></tr>{% endfor %}</tbody></table>
+      <table class="ledger" id="batches">
+        <thead><tr><th>批次</th><th>映射版本</th><th class="num">金额</th><th class="num">采纳</th><th class="num">隔离</th><th>建立时间</th></tr></thead>
+        <tbody>
+        {% for batch in batches %}
+          <tr data-batch="{{ batch.batch_id }}">
+            <td class="mono">{{ batch.batch_id }}</td>
+            <td class="num">v{{ batch.mapping_version }}</td>
+            <td class="num">{{ batch.amount }}</td>
+            <td class="num">{{ batch.accepted }}</td>
+            <td class="num">{{ batch.quarantined }}</td>
+            <td class="mono">{{ batch.created_at }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
   <section class="panel panel--evidence">
-    <div class="panel__head"><h2>证据</h2><span class="panel__meta">7 条</span></div>
-    <div class="panel__body"><div class="evidence"><b>RUN-659-6</b><span>LINE 7</span><code>/api/reconcile</code></div><pre id="result">等待运行</pre></div>
+    <div class="panel__head"><h2>新建与核对</h2><span class="panel__meta">同一输入可按新版另建</span></div>
+    <div class="panel__body">
+      <label class="field"><span>映射版本（留空用最新）</span><input id="batch-version" type="number" min="1" placeholder="{{ current_version }}"></label>
+      <button class="btn btn--primary" id="create-batch">按样例建批</button>
+      <label class="field"><span>左批次</span><input id="left-batch" type="text" placeholder="旧版批次"></label>
+      <label class="field"><span>右批次</span><input id="right-batch" type="text" placeholder="新版批次"></label>
+      <button class="btn" id="compare-batches">比较归属差异</button>
+      <pre id="result">等待运行</pre>
+    </div>
   </section>
   <section class="panel panel--status">
-    <div class="panel__head"><h2>原因分布</h2><span class="panel__meta">3 类</span></div>
-    <div class="panel__body"><div class="bar"><i style="width:85%"></i></div><div class="legend"><span>采纳 2</span><span>隔离 3</span></div></div>
+    <div class="panel__head"><h2>归属差异</h2><span class="panel__meta" id="diff-meta">未比较</span></div>
+    <div class="panel__body panel__body--scroll">
+      <table class="ledger" id="differences">
+        <thead><tr><th>行号</th><th>旧版归属</th><th>新版归属</th><th class="num">金额变动</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </section>
 </div>
 {% endblock %}
-
+{% block scripts %}<script src="/static/batches.js"></script>{% endblock %}

@@ -1,27 +1,56 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="kpis">
-  <div class="kpi"><b>含税额</b><strong>18</strong><small>条</small></div>
-  <div class="kpi"><b>通过</b><strong>16</strong><small>条</small></div>
-  <div class="kpi"><b>隔离</b><strong>2</strong><small>条</small></div>
-  <div class="kpi"><b>规则版</b><strong>1.2</strong><small>v</small></div>
+  <div class="kpi"><b>当前映射版本</b><strong>{{ latest.version }}</strong><small>v</small></div>
+  <div class="kpi"><b>别名条数</b><strong>{{ latest.alias_count }}</strong><small>条</small></div>
+  <div class="kpi"><b>已建版本</b><strong>{{ versions | length }}</strong><small>个</small></div>
+  <div class="kpi"><b>本版批次</b><strong>{{ latest.batch_count }}</strong><small>个</small></div>
 </section>
 <div class="grid grid--quad">
   <section class="panel">
-    <div class="panel__head"><h2>主数据映射</h2><span class="state state--ok">通过</span></div>
+    <div class="panel__head">
+      <h2>映射版本</h2>
+      <span class="panel__meta">只追加 · 历史版本不可改写</span>
+    </div>
     <div class="panel__body panel__body--scroll">
-      <table class="ledger"><thead><tr><th>序号</th><th>业务键</th><th>状态</th><th class="num">值</th></tr></thead>
-      <tbody>{% for row in rows %}<tr><td class="num">{{ loop.index }}</td><td>{{ row.key }}</td><td>{{ row.status }}</td><td class="num">{{ row.value }}</td></tr>{% endfor %}</tbody></table>
+      <table class="ledger" id="versions">
+        <thead><tr><th>版本</th><th>别名</th><th>基于</th><th>说明</th><th>批次</th><th>发布时间</th></tr></thead>
+        <tbody>
+        {% for item in versions %}
+          <tr data-version="{{ item.version }}">
+            <td class="num">v{{ item.version }}</td>
+            <td class="num">{{ item.alias_count }}</td>
+            <td class="num">v{{ item.base_version }}</td>
+            <td>{{ item.note or "—" }}</td>
+            <td class="num">{{ item.batch_count }}</td>
+            <td class="mono">{{ item.created_at }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
   <section class="panel panel--evidence">
-    <div class="panel__head"><h2>证据</h2><span class="panel__meta">3 条</span></div>
-    <div class="panel__body"><div class="evidence"><b>RUN-659-2</b><span>LINE 3</span><code>/api/master/resolve</code></div><pre id="result">等待运行</pre></div>
+    <div class="panel__head"><h2>发布纠错</h2><span class="panel__meta">基准 v{{ latest.version }}</span></div>
+    <div class="panel__body">
+      <label class="field"><span>别名表（JSON，旧名 → 新名）</span>
+        <textarea id="alias-input" rows="5" spellcheck="false">{{ latest.aliases | tojson(indent=2) }}</textarea>
+      </label>
+      <label class="field"><span>基准版本</span><input id="base-version" type="number" min="1" value="{{ latest.version }}"></label>
+      <label class="field"><span>说明</span><input id="publish-note" type="text" placeholder="例如：A-01 归入 SKU-B"></label>
+      <button class="btn btn--primary" id="publish">发布新版本</button>
+      <pre id="result">等待运行</pre>
+    </div>
   </section>
   <section class="panel panel--status">
-    <div class="panel__head"><h2>原因分布</h2><span class="panel__meta">2 类</span></div>
-    <div class="panel__body"><div class="bar"><i style="width:61%"></i></div><div class="legend"><span>采纳 18</span><span>隔离 2</span></div></div>
+    <div class="panel__head"><h2>别名归属</h2><span class="panel__meta">v{{ latest.version }}</span></div>
+    <div class="panel__body panel__body--scroll">
+      <table class="ledger">
+        <thead><tr><th>别名</th><th>归集到</th><th class="num">版本</th></tr></thead>
+        <tbody>{% for row in rows %}<tr><td>{{ row.key }}</td><td>{{ row.status }}</td><td class="num">{{ row.value }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
   </section>
 </div>
 {% endblock %}
-
+{% block scripts %}<script src="/static/master.js"></script>{% endblock %}

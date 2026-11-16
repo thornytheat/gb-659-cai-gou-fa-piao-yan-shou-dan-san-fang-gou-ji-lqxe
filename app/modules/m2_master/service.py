@@ -1,13 +1,28 @@
-from .aliases import normalize_sku, resolve_alias
+from .aliases import normalize_supplier_code
 from .evolve import migrate_fields
+from .versions import BASELINE_ALIASES, current_version, resolve_for_version
 
-ALIASES = {"OLD-A": "SKU-A", "A-01": "SKU-A"}
+# 兼容旧调用方：默认解析始终读取已发布的最新版本，而不是进程内常量。
+ALIASES = BASELINE_ALIASES
 
-def run(payload: dict | None = None) -> dict:
+
+def run(payload: dict | None = None, version: int | None = None) -> dict:
     payload = migrate_fields(payload or {"item_code": " old-a ", "vendor_code": "000142"})
-    normalized = normalize_sku(payload["sku"])
-    return {"sku": normalized, "canonical": resolve_alias(normalized, ALIASES), "supplier_code": str(payload["supplier_code"])}
+    resolved = resolve_for_version(payload["sku"], version)
+    resolved["supplier_code"] = normalize_supplier_code(payload["supplier_code"])
+    return resolved
+
+
+def publish_correction(aliases: dict | None, base_version: int, note: str | None = None,
+                       idempotency_key: str | None = None) -> dict:
+    from .versions import publish
+    version, created = publish(aliases, base_version, note, idempotency_key)
+    return {**version, "created": created}
+
+
+def version_summary() -> dict:
+    return current_version()
+
 
 def demo():
     return run()
-
